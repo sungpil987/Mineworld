@@ -1,0 +1,7 @@
+.gradle/
+**/build/
+local.properties
+.signing/
+*.keystore
+__pycache__/
+test-results/
