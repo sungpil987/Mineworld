@@ -2,11 +2,11 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#0d181b"><title>마인월드</title><link rel="stylesheet" href="style.css"></head>
 <body>
 <div id="app">
-<header><div class="brand"><span class="brandmark">M</span><div><b>MINEWORLD</b><small>산너머, 새로운 발견</small></div></div><button class="icon-button" id="settings" aria-label="설정">⚙</button></header>
+<header><div class="brand"><span class="brandmark">M</span><div><b>MINEWORLD</b><small>산너머, 끝없는 원정</small></div></div><button class="icon-button" id="settings" aria-label="설정">⚙</button></header>
 <section class="wallet"><div><span class="label">보유 골드</span><strong id="gold">0 <small>G</small></strong></div><div class="soul"><span class="label">영혼 결정</span><strong id="souls">0 <small>◆</small></strong></div></section>
 <main id="viewport"><canvas id="game" aria-label="광산 탐험 화면. 바닥을 누르면 이동하고 광물을 누르면 자동 채굴합니다."></canvas>
 <div class="mine-heading"><span id="mine-name">이끼빛 갱도</span><b id="floor">B1</b><button id="map-button" aria-label="광산 선택">광산 변경 ↗</button></div>
-<div class="expedition"><div id="objective">광물을 눌러 채굴을 시작해 봐</div><div id="floor-progress"><i></i></div></div>
+<span id="timer" class="timer hidden"></span><div class="expedition"><div id="objective">광물을 눌러 채굴을 시작해 봐</div><div id="floor-progress"><i></i></div></div>
 <div class="health hidden" id="health"><span>탐험가</span><div><i></i></div><b>100</b></div>
 <div class="boss-health hidden" id="boss-health"><span></span><div><i></i></div></div>
 <div class="target-info hidden" id="target-info"></div>
@@ -14,6 +14,7 @@
 <div class="world-bottom"><button id="home">⌂ 귀환</button><span id="world-tip">바닥 터치 이동 · 광물 터치 채굴</span><button id="descend">계단 찾기 ↓</button></div>
 <div id="minimap"><canvas width="116" height="90"></canvas><span>탐험 지도</span></div>
 </main>
+<section class="quickbar"><button id="inventory">▣ 탐험 가방 <small id="catalyst-count">0 촉매</small></button><span id="boost-status"></span><button id="ultimate"><span>✦ 리미트</span><b>0%</b></button></section>
 <section class="skills"><button id="dash"><span class="skill-icon">➶</span><span>돌진<small>합계 Lv.15</small></span></button><button id="slam"><span class="skill-icon">✦</span><span>광역 강타<small>합계 Lv.30</small></span></button><button id="luck"><span class="skill-icon">◇</span><span>행운 채굴<small>합계 Lv.60</small></span></button></section>
 <section class="upgrades"><div class="section-title"><span>탐험가 성장 <b id="total-level">Lv.0</b></span><button id="buy-mode">강화 ×1</button></div><div class="upgrade-grid">
 <button data-upgrade="speed"><span class="upgrade-symbol">»</span><span class="upgrade-title">속도 <b>0</b></span><small>채굴 속도</small><em>22 G</em></button>
@@ -23,5 +24,5 @@
 <nav><button data-tab="book"><span>▥</span>도감</button><button data-tab="shop"><span>♜</span>영혼 상점</button><button data-tab="achievements"><span>♧</span>업적<i id="badge" class="hidden"></i></button><button data-tab="rebirth"><span>⟳</span>환생</button></nav>
 </div>
 <div id="modal" class="modal hidden"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="sheet-head"><div><small id="modal-eyebrow">MINEWORLD</small><h1 id="modal-title"></h1></div><button id="close-modal" aria-label="닫기">×</button></div><div id="modal-content"></div></section></div>
-<script src="core.js"></script><script src="game.js"></script>
+<script src="data.js"></script><script src="core.js"></script><script src="game.js"></script>
 </body></html>
