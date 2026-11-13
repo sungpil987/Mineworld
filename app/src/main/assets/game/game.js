@@ -26,7 +26,7 @@ function bossName(){const m=C.MINES[world.biome],trial=C.TRIALS.find(t=>t.id===w
 function buildNormal(){
  const m=C.MINES[world.biome],trial=C.TRIALS.find(t=>t.id===world.trial),bossFloor=world.mode==='snow'||world.mode==='trial'&&['power','power2'].includes(trial.type)||world.mode==='daily'&&world.dayIndex===6||world.mode==='mine'&&world.floor===m.floors&&![12,13,14,15,17,19].includes(m.id)&&(m.id!==16||state.pickaxe.repaired);
  if(bossFloor){world.boss=makeBoss(world.mode==='snow'?'거대 눈사람':bossName());if(world.mode==='snow'){world.timeLeft=90;for(let i=0;i<12;i++)world.nodes.push(node(27,rand(100,W-100),rand(150,H-100),'snow',{remaining:1000}));}else addLife();return;}
- const count=[1,6].includes(m.id)?90:72+Math.min(40,world.floor*3),rare=has('map')?1.4:1;
+ const count=[1,6].includes(m.id)?90:72+Math.min(40,world.floor*3),rare=(has('map')?1.4:1)*(1+C.option(state,'rare'));
  for(let i=0;i<count;i++){
    let pool=m.ores;if(world.mode==='trial')pool=trial.type==='speed'?world.floor>10?C.MINES[7].ores:world.floor>5?C.MINES[5].ores:C.MINES[3].ores:m.ores;
    if(world.mode==='daily')pool=world.dayIndex===4?[23,24,25]:world.dayIndex===7?[11,12,17,26,30,33,37,42]:m.ores;
@@ -123,6 +123,7 @@ function mine(n,scale=1,hits=1,proc=true){
  if(n===world.boss){n.hp-=dmg*hits*(1+C.option(state,'boss'));n.flash=.12;if(n.hp<=0)bossWin();return;}
  const available=n.remaining,damage=dmg*hits,oldHp=n.hp;let cycles=damage>=oldHp?1+Math.floor((damage-oldHp)/n.max):0;cycles=Math.min(available,cycles);n.hp=cycles?n.max-((damage-oldHp)%n.max):oldHp-damage;n.remaining-=cycles;n.flash=.1;swing=.18;
  if(cycles){
+   if(n.goldBreak){n.goldBreak=Math.max(0,n.goldBreak-Math.min(.25,cycles*.01));n.max=Math.max(1,n.originalMax*Math.pow(.7,n.goldBreak));n.hp=Math.min(n.hp,n.max);}
    if(n.kind==='life'){const b=world.boss;if(b){b.hp-=b.max*.19;player.hp=Math.min(maxHealth(),player.hp+12);ripple(n.x,n.y,'#fff3cc',110);float('생명석 파괴',n.x,n.y,'#caffdf');if(b.hp<=0)bossWin();}}
    else if(n.kind==='seal'){
      if(C.unseal(state,world.biome)){toast(world.biome===16?'차원 봉인 '+state.dimensionSeals+'/7 해제':'봉인 해제! '+C.MINES[world.biome].name);if(world.biome===16&&state.dimensionSeals<7)generate(16,1,null,'seal');else generate(world.biome,1);save();return;}
@@ -132,7 +133,7 @@ function mine(n,scale=1,hits=1,proc=true){
      sessionValue+=value;world.mined+=cycles;world.score+=cycles;if(!world.dailyKinds.includes(n.id))world.dailyKinds.push(n.id);
      if(world.mode==='daily'&&world.dayIndex===3)world.styleCounts[cc.suit]=(world.styleCounts[cc.suit]||0)+cycles;
      float('+'+C.format(value)+(cycles>1?' ×'+C.format(cycles):'')+(lucky?' 행운':''),n.x,n.y);sound('coin');
-     if(n.id===59&&n.remaining<=0){const required=[...new Set(C.MINES.slice(0,14).flatMap(m=>m.ores))];if(required.every(id=>state.seen[id]>0)){state.temple.unlocked=true;toast('죽음의 꽃 완전 채굴 · 각인의 사원이 열렸어!');}else toast('각인의 사원: 심연까지의 미발견 광물 '+required.filter(id=>!state.seen[id]).length+'종 남음');}
+     if(n.id===59&&n.remaining<=0&&world.biome===13&&world.floor===6){const required=[...new Set(C.MINES.slice(0,14).flatMap(m=>m.ores))];if(required.every(id=>state.seen[id]>0)){state.temple.unlocked=true;toast('죽음의 꽃 완전 채굴 · 각인의 사원이 열렸어!');}else toast('각인의 사원: 심연까지의 미발견 광물 '+required.filter(id=>!state.seen[id]).length+'종 남음');}
    }
  }else if(proc&&Math.random()<.2)sound('hit');
  if(n.remaining<=0&&world.nodes.includes(n)){burst(n.x,n.y,C.ORES[n.id].color,10);const debris=['ore'].includes(n.kind)&&!has('rubble')&&!['trial','daily'].includes(world.mode);const x=n.x,y=n.y;removeNode(n);if(debris)world.nodes.push(node(0,x,y,'stone'));}
@@ -252,9 +253,9 @@ function skill(id){const need={dash:15,slam:30,luck:60}[id];if(C.total(combat())
 function areaMine(x,y,r,scale=1,hits=1){ripple(x,y,'#d7edb8',r);for(const n of[...world.nodes])if(['ore','stone','tree','life','snow','seal'].includes(n.kind)&&distance(n,{x,y})<r)mine(n,scale,hits,false);}
 function ultimate(){
  const suit=combat().suit;if(suit==='prisoner'||hardMode()||!has('limit')||state.limitGauge<100||paused)return;
- state.limitGauge-=100;state.limitUses++;world.ultMode=suit;world.ultTime=suit==='hammer'?15:suit==='scientist'?3:10;
+ state.limitGauge-=100;state.limitUses++;world.ultMode=suit;world.ultPulse=0;world.handOrigin={x:player.x,y:player.y};world.ultTime=suit==='hammer'?15:suit==='scientist'?3:10;
  if(['miner','scout','warden','alchemist','sniper','beach','santa','valentine'].includes(suit))for(const n of[...world.nodes])if(['ore','stone','life','tree','snow'].includes(n.kind)&&n.x>cam.x&&n.x<cam.x+width/zoom&&n.y>cam.y&&n.y<cam.y+height/zoom)mine(n,4,Math.max(2,1/C.interval(combat())),false);
- if(suit==='gold')for(const n of world.nodes)if(['ore','stone','life','seal'].includes(n.kind)){n.hp=Math.max(1,n.hp*.7);n.max=Math.max(1,n.max*.7);}
+ if(suit==='gold')for(const n of world.nodes)if(['ore','stone','life','seal'].includes(n.kind)&&(n.goldBreak||0)<3){n.originalMax=n.originalMax||n.max;n.goldBreak=(n.goldBreak||0)+1;n.max=Math.max(1,n.originalMax*Math.pow(.7,n.goldBreak));n.hp=Math.min(n.hp,n.max);}
  if(suit==='drill'){const a=Math.atan2(player.ty-player.y,player.tx-player.x);world.drill={x:player.x,y:player.y,vx:Math.cos(a)*250,vy:Math.sin(a)*250,hits:0};}
  toast(C.SUITS.find(s=>s.id===suit).name+' · 리미트 해제!');sound('upgrade');save();hud();
 }
@@ -302,8 +303,8 @@ function update(dt){
  giantTimer-=dt;if(giantTimer<=0){giantTimer=5;if(has('giant'))areaMine(player.x,player.y,175,3,1);}
  midasTimer-=dt;if(midasTimer<=0){midasTimer=5;if(has('midas')){const v=Math.floor((1000+C.total(state)*2+C.option(state,'midas')+C.total(state)*C.option(state,'midasLevel'))*C.multiplier(state)*(state.secret.completed?2:1));C.credit(state,v);float('미다스 +'+C.format(v),player.x,player.y);}}
  companionTimer-=dt;if(companionTimer<=0){companionTimer=Math.max(.06,C.interval(cc)*2);if(has('shadow')||world.ultTime>0&&world.ultMode==='ninja'){const n=world.nodes.filter(n=>['ore','stone','life'].includes(n.kind)&&distance(player,n)<150).sort((a,b)=>distance(a,player)-distance(b,player))[0];if(n)mine(n,.5,Math.max(1,.15/Math.max(1e-9,C.interval(cc))),false);}}
- if(suit==='shield'&&world.boss&&Math.floor(clock*2)!==Math.floor((clock-dt)*2)){const orb={x:player.x+Math.cos(clock*3)*52,y:player.y+Math.sin(clock*3)*38};for(const n of[...world.nodes])if(n.kind==='life'&&distance(n,orb)<35)mine(n,1.2,Math.max(1,.5/Math.max(1e-9,C.interval(cc))),false);}
- if(world.ultTime>0){world.ultTime-=dt;if(world.ultMode==='hammer')areaMine(player.x,player.y,130,2,Math.max(1,dt/Math.max(1e-9,C.interval(cc))));if(world.ultMode==='drill'&&world.drill){const d=world.drill;d.x+=d.vx*dt;d.y+=d.vy*dt;for(const n of[...world.nodes])if(['ore','stone','life','seal'].includes(n.kind)&&distance(n,d)<65)mine(n,4,5,false);if(d.x<50||d.y<95||d.x>W-50||d.y>H-50){areaMine(clamp(d.x,60,W-60),clamp(d.y,110,H-60),260,6,10);world.drill=null;}}}
+ if(suit==='shield'&&Math.floor(clock*2)!==Math.floor((clock-dt)*2)){const orb={x:player.x+Math.cos(clock*3)*52,y:player.y+Math.sin(clock*3)*38};for(const n of[...world.nodes])if(['ore','stone','tree','life'].includes(n.kind)&&distance(n,orb)<35)mine(n,1.2,Math.max(1,.5/Math.max(1e-9,C.interval(cc))),false);}
+ if(world.ultTime>0){world.ultTime-=dt;world.ultPulse=(world.ultPulse||0)-dt;if(world.ultPulse<=0){world.ultPulse=.15;if(world.ultMode==='bighand'){const hand=world.handOrigin||player;areaMine(hand.x,hand.y,155,1,Math.max(1,.15/Math.max(1e-9,C.interval(cc))));}if(world.ultMode==='scientist'){let point=player;const used=new Set();for(let j=0;j<8;j++){const n=world.nodes.filter(n=>['ore','stone','tree','life'].includes(n.kind)&&!used.has(n)&&distance(point,n)<230).sort((a,b)=>distance(point,a)-distance(point,b))[0];if(!n)break;lineEffects.push({x:point.x,y:point.y,x2:n.x,y2:n.y,life:.25});mine(n,1,Math.max(1,.15/Math.max(1e-9,C.interval(cc))),false);used.add(n);point=n;}}}if(world.ultMode==='hammer')areaMine(player.x,player.y,130,2,Math.max(1,dt/Math.max(1e-9,C.interval(cc))));if(world.ultMode==='drill'&&world.drill){const d=world.drill;d.x+=d.vx*dt;d.y+=d.vy*dt;for(const n of[...world.nodes])if(['ore','stone','life','seal'].includes(n.kind)&&distance(n,d)<65){mine(n,4,5,false);d.hits++;}if(d.hits>=20||d.x<50||d.y<95||d.x>W-50||d.y>H-50){areaMine(clamp(d.x,60,W-60),clamp(d.y,110,H-60),260,6,10);world.drill=null;}}}
  bossUpdate(dt);hazards(dt);if(world!==scene)return;
  if(state.settings.autoNext&&readyGate()&&!target&&world.mode==='mine'&&world.biome!==15){moveTo(world.gate.x,world.gate.y);if(distance(player,world.gate)<90)descend();}
  for(const n of world.nodes)n.flash=Math.max(0,n.flash-dt);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=150*dt;p.life-=dt;}particles=particles.filter(p=>p.life>0);for(const f of floats){f.y-=26*dt;f.life-=dt;}floats=floats.filter(f=>f.life>0);for(const r of ripples){r.r+=(r.max-r.r)*dt*8;r.life-=dt;}ripples=ripples.filter(r=>r.life>0);for(const l of lineEffects)l.life-=dt;lineEffects=lineEffects.filter(l=>l.life>0);
@@ -430,6 +431,7 @@ function draw(){
  const entities=world.nodes.filter(n=>n.x>cam.x-80&&n.x<cam.x+width/zoom+80&&n.y>cam.y-90&&n.y<cam.y+height/zoom+90).map(n=>({y:n.y,draw:()=>['ore','stone','tree','life','snow'].includes(n.kind)?drawOre(n):drawSpecial(n)}));entities.push({y:player.y,draw:drawPlayer});if(world.boss)entities.push({y:world.boss.y,draw:drawBoss});entities.sort((a,b)=>a.y-b.y).forEach(e=>e.draw());
  for(const m of world.minions||[]){ellipse(m.x,m.y,12,13,'#90b582');rect(m.x-6,m.y-4,4,4,'#eaffd7');rect(m.x+3,m.y-4,4,4,'#eaffd7');}
  if(world.chaser){const c=world.chaser;polygon([[c.x-20,c.y+20],[c.x-15,c.y-20],[c.x,c.y-30],[c.x+17,c.y-15],[c.x+24,c.y+20]],'#b8a0d8');rect(c.x-10,c.y-13,6,5,'#f7c1d7');rect(c.x+5,c.y-13,6,5,'#f7c1d7');}
+ if(world.ultMode==='bighand'&&world.ultTime>0&&world.handOrigin){drawPlayerAt(world.handOrigin.x-25,world.handOrigin.y-10,'bighand',.45);}
  if(world.drill){const d=world.drill;ctx.save();ctx.translate(d.x,d.y);ctx.rotate(Math.atan2(d.vy,d.vx));polygon([[35,0],[-25,-20],[-25,20]],'#c8c4ee');ctx.restore();}
  if(!target&&path.length){const p=path[path.length-1];ctx.strokeStyle='#d2e6c477';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(p.x,p.y,10,6,0,0,Math.PI*2);ctx.stroke();}
  for(const b of bullets){ellipse(b.x,b.y,b.r+3,b.r+3,b.slow?'#a7dcff33':'#ffd29b33');rect(b.x-b.r/2,b.y-b.r/2,b.r,b.r,b.color||'#ffd39b');rect(b.x-2,b.y-2,4,4,'#fff2d5');}
@@ -503,7 +505,7 @@ $('#modal-content').addEventListener('click',e=>{
  if(a==='mine'){
   const i=Number(id),m=C.MINES[i];if(!m)return;const seal=m.access==='seal'&&!state.unlocked[i]||m.access==='dimension'&&state.dimensionSeals<7;
   if(seal){if(m.id===16&&!state.engraveCount){toast('첫 각인을 마치면 차원의 일곱 봉인에 도전할 수 있어.');return;}generate(i,1,null,'seal');closeModal();toast('봉인석을 터치해 채굴해. 요구 레벨에 도달해야 부술 수 있어.');}
-  else{const result=C.enter(state,i);if(!result.ok){toast(result.reason);return;}generate(i,result.floor||1);closeModal();toast(m.name+' · 원정 시작');}
+  else{const result=C.enter(state,i);if(!result.ok){toast(result.reason);return;}generate(i,result.floor||1,null,i===18?'snow':'mine');closeModal();toast(m.name+' · 원정 시작');}
  }else if(a==='ticket'){
   const i=Number(id),m=C.MINES[i];if(!m?.fee)return;const fee=Math.ceil(m.fee*(state.suit==='hammer'?.5:1));if(state.gold<fee||state.tickets[i]>=99){toast('골드가 부족하거나 입장권을 99장 보유 중이야.');return;}state.gold-=fee;state.tickets[i]++;save();mapModal();
  }else if(a==='trial'){
@@ -526,7 +528,7 @@ $('#modal-content').addEventListener('click',e=>{
  else if(a==='engrave-check')confirmModal('새로운 기억을 새길까?','골드·영혼 결정·기본 능력치와 골드/영혼으로 구매한 도구·코스튬·스킬·이전 영구 강화가 초기화돼. 각인 재화와 도감·징표는 유지돼.','engrave','각인 실행');
  else if(a==='engrave'){const n=C.engrave(state);if(n){generate(0,1);closeModal();toast('각인 완료 · 각인 결정 +'+n+' · 차원의 봉인이 열렸어.');}}
  else if(a==='sky-open'){if(world.biome===12&&world.floor===10&&C.openSky(state)){save();skyModal();toast('세 문이 열렸다 · 무한의 열쇠 +1');}}
- else if(a==='repair'){if(C.repairPick(state)){save();forgeModal();toast('차원의 곡괭이 수리 완료!');}}
+ else if(a==='repair'){if(C.repairPick(state)){if(world.biome===16&&world.floor===10){world.boss=makeBoss('광부');world.cleared=false;addLife();}save();forgeModal();toast('차원의 곡괭이 수리 완료!');}}
  else if(a==='reroll'){if(C.reroll(state)){save();forgeModal();}}
  else if(a==='lock-option'){const i=Number(id);if(state.items.helmet&&Number.isInteger(i)&&i>=0&&i<state.pickaxe.options.length){state.pickaxe.locked=state.pickaxe.locked===i?-1:i;save();forgeModal();}}
  else if(a==='record-swap'){if(C.swapRecord(state)){save();forgeModal();}}

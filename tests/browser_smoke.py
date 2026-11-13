@@ -86,6 +86,14 @@ with sync_playwright() as p:
    seed({'world':{'biome':0,'floor':5,'mode':'mine','player':{'x':180,'y':215,'hp':100},'boss':{'name':boss['name'],'timer':0.5,'hp':440,'x':640,'y':400}}})
    page.wait_for_timeout(650)
   print('PASS all seven trial routes and 33 boss patterns',flush=True)
+  # Sustained costume ultimates must mine without an ordinary target click.
+  for suit in ['bighand','scientist']:
+   seed({'levels':{'speed':10,'power':10,'skill':0},'owned':['miner',suit],'suit':suit,'items':{'limit':1},'limitGauge':100,'world':{'biome':0,'floor':1,'mode':'mine','player':{'x':180,'y':215,'hp':100},'nodes':[{'id':1,'kind':'ore','x':220,'y':220,'hp':14,'max':14,'remaining':20}]}})
+   page.locator('#ultimate').click();page.wait_for_timeout(500);assert state()['stats']['mined']>0;assert state()['limitGauge']==0
+  seed({'owned':['miner','gold'],'suit':'gold','items':{'limit':1},'limitGauge':1000,'world':{'biome':0,'floor':1,'mode':'mine','player':{'x':180,'y':215,'hp':100},'nodes':[{'id':1,'kind':'ore','x':220,'y':220,'hp':14,'max':14,'remaining':20}]}})
+  for _ in range(4):page.locator('#ultimate').click();page.wait_for_timeout(200)
+  assert state()['world']['nodes'][0]['goldBreak']==3
+  print('PASS sustained costume ultimates and capped gold weakening',flush=True)
   # Backup export and invalid import fail without touching progress.
   page.locator('#settings').click();page.locator('[data-action=export]').click();assert json.loads(page.locator('#save-code').input_value())['version']==2;page.locator('#save-code').fill('invalid');page.locator('[data-action=import-check]').click();assert '올바른' in page.locator('#save-status').inner_text();close()
   page.set_viewport_size({'width':360,'height':640});page.wait_for_timeout(250);page.screenshot(path=str(out/'09-small-screen.png'));assert page.locator('#game').bounding_box()['height']>=180;nav=page.locator('nav').bounding_box();assert nav['y']+nav['height']<=641
