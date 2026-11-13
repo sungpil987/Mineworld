@@ -62,7 +62,7 @@ function generate(biome=0,floor=1,saved=null){
   }
   const p=saved?.player;
   player.x=safeNumber(p?.x,50,W-50,180);player.y=safeNumber(p?.y,75,H-50,180);
-  player.tx=player.x;player.ty=player.y;player.hp=safeNumber(p?.hp,1,maxHealth(),maxHealth());player.invuln=1;
+  player.tx=player.x;player.ty=player.y;player.hp=safeNumber(p?.hp,1,maxHealth(),maxHealth());player.invuln=world.boss?1:0;
   target=null;bullets=[];warningZones=[];particles=[];floats=[];attackClock=0;sessionValue=0;sessionSeconds=0;
   cam.x=clamp(player.x-width/zoom/2,0,W-width/zoom);cam.y=clamp(player.y-height/zoom/2,0,H-height/zoom);
   state.stats.deepest=Math.max(state.stats.deepest,biome*5+floor);hud();

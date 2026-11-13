@@ -9,6 +9,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.JavascriptInterface;
 import android.view.HapticFeedbackConstants;
+import android.view.View;
+import android.widget.FrameLayout;
 import java.io.ByteArrayInputStream;
 
 public final class MainActivity extends Activity {
@@ -36,7 +38,19 @@ public final class MainActivity extends Activity {
                 return null;
             }
         });
-        setContentView(game);
+        // Keep HUD and navigation above system bars, including Android 15 edge-to-edge.
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        FrameLayout container = new FrameLayout(this);
+        container.setBackgroundColor(Color.rgb(13,24,27));
+        container.setOnApplyWindowInsetsListener((view, insets) -> {
+            view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            return insets.consumeSystemWindowInsets();
+        });
+        container.addView(game, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(container);
+        container.requestApplyInsets();
         game.loadUrl("file:///android_asset/game/index.html");
     }
     private final class Feedback {
