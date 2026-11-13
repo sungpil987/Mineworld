@@ -18,7 +18,7 @@ with sync_playwright() as p:
   page.evaluate('''fixture=>{const s=Object.assign(MineCore.fresh(),fixture);s.tutorial=true;localStorage.setItem('mineworld.save.v1',JSON.stringify(s));}''',fixture)
   page.reload();page.wait_for_timeout(200)
  def click_node(kind=None,ore=None):
-  found=page.evaluate('''q=>{const s=MW.getState(),v=MW.getView(),n=s.world.nodes.find(n=>(!q.kind||n.kind===q.kind)&&(q.ore===null||n.id===q.ore));if(!n)return false;const el=document.querySelector('#game'),r=el.getBoundingClientRect();el.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+(n.x-v.cam.x)*v.zoom,clientY:r.top+(n.y-v.cam.y)*v.zoom,bubbles:true}));return true;}''',{'kind':kind,'ore':ore})
+  found=page.evaluate('''q=>{const s=MW.getState(),v=MW.getView(),n=s.world.nodes.slice().sort((a,b)=>Math.hypot(a.x-s.world.player.x,a.y-s.world.player.y)-Math.hypot(b.x-s.world.player.x,b.y-s.world.player.y)).find(n=>(!q.kind||n.kind===q.kind)&&(q.ore===null||n.id===q.ore));if(!n)return false;const el=document.querySelector('#game'),r=el.getBoundingClientRect();el.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+(n.x-v.cam.x)*v.zoom,clientY:r.top+(n.y-v.cam.y)*v.zoom,bubbles:true}));return true;}''',{'kind':kind,'ore':ore})
   assert found,(kind,ore)
  def state():return page.evaluate('MW.getState()')
  def close():page.locator('#close-modal').click()
@@ -35,7 +35,7 @@ with sync_playwright() as p:
  try:
   page.goto(url);page.get_by_role('button',name='원정 시작하기').click();page.wait_for_timeout(300)
   page.screenshot(path=str(out/'01-first-play.png'))
-  click_node(ore=1);page.wait_for_timeout(3300);assert state()['stats']['mined']>=1
+  click_node(ore=1);page.wait_for_function('MW.getState().stats.mined>=2',timeout=15000);assert state()['gold']>=22
   page.locator('[data-upgrade=power]').click();page.evaluate('MW.suspend()');before=state();page.reload();page.wait_for_timeout(200);after=state();assert before['levels']==after['levels'];assert before['gold']==after['gold'];assert before['world']['nodes']==after['world']['nodes']
   page.locator('#map-button').click();assert page.locator('.mine-card').count()==20;route('trials');assert page.locator('[data-action=trial]').count()==7;route('daily');page.locator('[data-action=daily-claim]').click();assert state()['catalysts']==3;page.screenshot(path=str(out/'02-expeditions.png'));close()
   page.locator('[data-tab=book]').click();assert page.locator('.ore-card').count()==79;page.screenshot(path=str(out/'03-book.png'));route('marks');route('records');close()

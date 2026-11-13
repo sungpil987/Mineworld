@@ -37,12 +37,14 @@ function buildNormal(){
  }
  // Keep a visible, easy-to-read first cluster; don't depend on procedural luck to start playing.
  world.nodes=world.nodes.filter(n=>Math.hypot(n.x-255,n.y-235)>130);
- for(let i=0;i<4;i++)world.nodes.push(node(m.ores[i%m.ores.length],240+i*64,220+(i%2)*75));
+ const startPool=world.mode==='daily'?(world.dayIndex===4?[23,24,25]:world.dayIndex===7?[11,12,17,26,30,33,37,42]:m.ores):m.ores;
+ for(let i=0;i<4;i++)world.nodes.push(node(startPool[i%startPool.length],240+i*64,220+(i%2)*75));
  if(world.floor>=3)world.nodes.push(node(m.ores[m.ores.length-1],460,340));
  if(!has('rubble')||m.id===5)for(let i=0;i<10;i++)world.nodes.push(node(0,rand(95,W-90),rand(140,H-90),m.id===5?'tree':'stone'));
  if(world.mode==='trial'){
-   if(trial.type==='speed'){world.nodes.push(node(17,W-170,H-200));if(trial.hard)for(let y=280;y<H-160;y+=160){const gap=(Math.floor(y/160)%2?3:W/40-6);for(let x=80;x<W-80;x+=40)if(Math.abs(x/40-gap)>1)world.obstacles.push({x,y,w:40,h:40});}}
+   if(trial.type==='speed'){world.nodes=world.nodes.filter(n=>n.id!==17);world.nodes.push(node(17,W-150,H-160),node(17,W-210,H-210));if(trial.hard)for(let y=280;y<H-160;y+=160){const gap=(Math.floor(y/160)%2?3:W/40-6);for(let x=80;x<W-80;x+=40)if(Math.abs(x/40-gap)>1)world.obstacles.push({x,y,w:40,h:40});}}
    if(trial.type==='tech')world.hazardTimer=1;
+   world.nodes=world.nodes.filter(n=>!world.obstacles.some(o=>n.x>o.x-12&&n.x<o.x+o.w+12&&n.y>o.y-12&&n.y<o.y+o.h+12));
    return;
  }
  if(world.mode==='daily')return;
