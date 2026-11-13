@@ -28,6 +28,7 @@ with sync_playwright() as p:
  page.locator('#settings').click();page.get_by_role('button',name='내보내기',exact=True).click();assert len(page.locator('#save-code').input_value())>100
  page.locator('#save-code').fill('invalid');page.get_by_role('button',name='코드 복원',exact=True).click();assert '올바른' in page.locator('#save-status').inner_text();page.locator('#close-modal').click()
  # Load a mid-game save to exercise boss and permanent progression through real UI.
+ page.evaluate('MW.suspend()')
  page.evaluate('''() => {const s=MineCore.fresh();s.tutorial=true;s.levels={speed:35,power:35,skill:35};s.gold=25000;s.souls=100;s.unlocked=[true,true,false];s.world={biome:0,floor:5,player:{x:850,y:390,hp:100},nodes:Array.from({length:6},()=>({id:5,x:870,y:390,hp:45,remaining:1,life:true}))};localStorage.setItem('mineworld.save.v1',JSON.stringify(s));}''');page.reload();page.wait_for_timeout(700)
  assert page.locator('#boss-health').is_visible();page.screenshot(path=str(out/'02-boss.png'))
  page.locator('[data-tab=shop]').click();page.locator('[data-action=suit][data-id=warden]').click();assert page.evaluate('MW.getState().suit')=='warden';page.locator('#close-modal').click()
